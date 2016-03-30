@@ -1,0 +1,25 @@
+
+{
+  "rootDir": "{{ aptly_root_dir }}",
+  "downloadConcurrency": 4,
+  "downloadSpeedLimit": 0,
+  "architectures": [],
+  "dependencyFollowSuggests": false,
+  "dependencyFollowRecommends": false,
+  "dependencyFollowAllVariants": false,
+  "dependencyFollowSource": false,
+  "gpgDisableSign": false,
+  "gpgDisableVerify": false,
+  "downloadSourcePackages": false,
+  "ppaDistributorID": "ubuntu",
+  "ppaCodename": "",
+{% if aptly_s3_enabled %}
+  "S3PublishEndpoints":
+    {
+        "amazon": {{ aptly_s3_endpoint | to_json }}
+    },
+{% else %}
+  "S3PublishEndpoints": {},
+{% endif %}
+  "SwiftPublishEndpoints": {}
+}

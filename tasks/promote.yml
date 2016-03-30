@@ -1,0 +1,84 @@
+---
+-
+    name: Generate token for snapshot promote
+    set_fact:
+      snapshot_token="BASE_TOKEN-{{ ansible_date_time.epoch }}"
+    tags:
+      - promote-snapshots
+
+-
+    name: Create publish snapshots
+    shell: >
+        (aptly snapshot list -raw | grep -q "{{ item }}" )
+        || (aptly snapshot create "{{ item }}" empty )
+    sudo: yes
+    sudo_user: "{{ aptly_user }}"
+    register: register_snapshot_publish
+    changed_when: "'successfully created' in register_snapshot_publish.stdout"
+    with_items: aptly_snapshot_published
+    tags:
+      - promote-snapshots
+
+-
+    name: Prepare snapshot bases for promote
+    command: aptly snapshot merge "{{ item.1.base }}-{{ snapshot_token }}" "{{ item.1.base }}"
+    sudo: yes
+    sudo_user: "{{ aptly_user }}"
+    changed_when: false
+    when: item.0 != None
+    with_together:
+      - aptly_snapshot_promote
+      - aptly_snapshot_promote_definitions
+    tags:
+      - promote-snapshots
+-
+    name: Unpublish promoting snapshots
+    shell: >
+        (aptly publish list | grep -q "{{ item.1.name }}")
+        && aptly publish drop "{{ aptly_distribution }}" "{{ aptly_endopoint_config }}{{ item.1.name }}" || exit 0
+    when: item.0 != None
+    sudo: yes
+    sudo_user: "{{ aptly_user }}"
+    changed_when: false
+    with_together:
+      - aptly_snapshot_promote
+      - aptly_snapshot_promote_definitions
+    tags:
+      - promote-snapshots
+      - unpublish-snapshots
+-
+    name: Promote snapshot from bases
+    shell: >
+        aptly -force=true snapshot drop "{{ item.1.name }}"  &&
+        aptly snapshot merge "{{ item.1.name }}" "{{ item.1.base }}-{{ snapshot_token }}"
+    when: item.0 != None
+    sudo: yes
+    sudo_user: "{{ aptly_user }}"
+    changed_when: false
+    with_together:
+      - aptly_snapshot_promote
+      - aptly_snapshot_promote_definitions
+    tags:
+      - promote-snapshots
+-
+    name: Wipe temporary base snapshots
+    shell: aptly snapshot list -raw | grep "BASE_TOKEN-" | xargs -I{} aptly -force=true snapshot drop "{}"
+    changed_when: false
+    sudo: yes
+    sudo_user: "{{ aptly_user }}"
+    tags:
+      - promote-snapshots
+-
+    name: Publish promoted snapshots
+    shell: >
+     aptly -distribution="{{ aptly_distribution }}" publish snapshot --architectures "amd64,i386" \
+      "{{ item.1.name }}" "{{ aptly_endopoint_config }}{{ item.1.name }}"
+    when: item.0 != None
+    sudo: yes
+    sudo_user: "{{ aptly_user }}"
+    changed_when: false
+    with_together:
+      - aptly_snapshot_promote
+      - aptly_snapshot_promote_definitions
+    tags:
+      - promote-snapshots

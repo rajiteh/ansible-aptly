@@ -1,0 +1,33 @@
+---
+- include: nginx.yml
+  when: aptly_nginx_enabled
+
+- include: install.yml
+
+- include: config.yml
+  tags:
+    - config
+
+- include: mirrors.yml
+  tags:
+    - update-mirrors
+    - update
+
+- include: repositories.yml
+  tags:
+    - update-repositories
+    - update
+
+- include: snapshots.yml
+  tags:
+    - update-snapshots
+    - update
+
+- include: promote.yml
+  tags:
+    - promote-snapshots
+    - update
+
+- include: summary.yml
+  tags:
+    - summary

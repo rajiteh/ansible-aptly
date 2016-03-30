@@ -1,0 +1,62 @@
+---
+-
+    name: Ensure aptly root directory exists
+    file: >
+      path={{ aptly_root_dir }}
+      owner={{ aptly_user }}
+      group={{ aptly_user }}
+      mode="u=rwx,g=rx,o=rx"
+      state=directory
+    sudo: yes
+
+-
+    name: Configure aptly
+    template: >
+      src="aptly.conf.j2"
+      dest=/home/{{ aptly_user }}/.aptly.conf
+      owner={{ aptly_user }} group={{ aptly_user }}
+      mode="u=rw,g=r,o=r"
+    sudo: yes
+    tags:
+      - config-file
+-
+    name: Upload repository key
+    copy: src="{{ aptly_secret_key_path }}/{{ item }}" dest=/tmp owner={{ aptly_user }} group={{ aptly_user }} mode=0400
+    changed_when: false
+    sudo: yes
+    with_items:
+      - "{{ aptly_secret_key_file }}"
+      - "{{ aptly_public_key_file }}"
+-
+    name: Import repository key to gnupg (private)
+    shell: >
+        ( gpg --list-secret-keys | grep "{{ aptly_secret_key_id }}" )
+        || gpg --allow-secret-key-import --import /tmp/{{ aptly_secret_key_file }}
+    register: register_apt_import
+    changed_when: register_apt_import.stdout == ""
+    sudo: yes
+    sudo_user: "{{ aptly_user }}"
+
+-
+    name: Import repository key to gnupg (public)
+    shell: >
+        ( gpg --list-keys | grep "{{ aptly_secret_key_id }}" )
+        || gpg --import /tmp/{{ aptly_public_key_file }}
+    register: register_apt_import
+    changed_when: register_apt_import.stdout == ""
+    sudo: yes
+    sudo_user: "{{ aptly_user }}"
+
+-
+    name: Remove keys from remote host
+    file: path="/tmp/{{ item }}" state=absent
+    changed_when: false
+    sudo: yes
+    with_items:
+      - "{{ aptly_secret_key_file }}"
+      - "{{ aptly_public_key_file }}"
+-
+    name: Configure endpoint
+    set_fact: aptly_endopoint_config={{ "s3:amazon:" if aptly_s3_enabled else "" }}
+    tags:
+      - always

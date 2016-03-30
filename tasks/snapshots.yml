@@ -1,0 +1,55 @@
+---
+-
+    name: Retrieve a list of active mirrors
+    command: aptly mirror list -raw
+    register: register_aptly_mirrors
+    sudo: yes
+    changed_when: false
+    sudo_user: "{{ aptly_user }}"
+    tags:
+      - always
+
+-
+    name: Retrieve a list of active snapshots
+    command: aptly snapshot list -raw
+    register: register_aptly_snapshots
+    sudo: yes
+    changed_when: false
+    sudo_user: "{{ aptly_user }}"
+    tags:
+      - always
+
+-
+    name: Drop snapshots
+    command: aptly snapshot -force=true drop "{{ item.name }}"
+    sudo: yes
+    sudo_user: "{{ aptly_user }}"
+    register: register_snapshot_drop
+    changed_when: "'has been removed' in register_snapshot_drop.stdout"
+    with_items: "{{ aptly_snapshots_merged + aptly_mirrors }}"
+    when: "{{ aptly_perform_update | default(0) }} and item.name in register_aptly_snapshots.stdout_lines"
+    tags:
+      - drop-snapshots
+
+-
+    name: Create snapshots from mirrors
+    shell: >
+        (aptly snapshot list -raw | grep -q "{{ item }}" )
+        || (aptly snapshot create "{{ item }}" from mirror "{{ item }}" )
+    sudo: yes
+    sudo_user: "{{ aptly_user }}"
+    register: register_snapshot_create
+    changed_when: "'successfully created' in register_snapshot_create.stdout"
+    with_items: register_aptly_mirrors.stdout_lines
+
+
+-
+    name: Create merged snapshots
+    shell: >
+        (aptly snapshot list -raw | grep -q "{{ item.name }}" )
+        || (aptly snapshot merge "{{ item.name }}" "{{ item.snapshots | join('" "') }}" )
+    sudo: yes
+    sudo_user: "{{ aptly_user }}"
+    register: register_snapshot_merge
+    changed_when: "'successfully created' in register_snapshot_merge.stdout"
+    with_items: aptly_snapshots_merged

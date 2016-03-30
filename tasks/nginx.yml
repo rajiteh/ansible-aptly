@@ -1,0 +1,21 @@
+---
+-
+    name: Install Nginx
+    apt: name={{ item }} state=present update_cache=yes
+    with_items:
+        - nginx
+    sudo: yes
+-
+    name: remove nginx 'it works' page
+    file: path=/etc/nginx/sites-enabled/default state=absent
+    sudo: yes
+-
+    name: Upload nginx configuration file
+    template: src=nginx-aptly.conf.j2 dest=/etc/nginx/sites-available/aptly.conf owner=root group=root mode=644
+    notify: restart nginx
+    sudo: yes
+-
+    name: Creating nginx configuration symlinks
+    file: src=/etc/nginx/sites-available/aptly.conf dest=/etc/nginx/sites-enabled/aptly.conf state=link
+    notify: restart nginx
+    sudo: yes

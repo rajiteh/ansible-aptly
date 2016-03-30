@@ -1,0 +1,44 @@
+---
+-
+    name: Create repositories
+    shell: >
+        (aptly repo list -raw | grep -q "{{ item.name }}" )
+        || (
+            aptly repo create \
+                --comment "{{ item.comment|default('\"\"') }}" \
+                --distribution "{{ item.distribution|default('main') }}" \
+                --component "{{ item.component|default('main') }}" \
+                "{{ item.name }}"
+        )
+    register: register_repo_create
+    changed_when: "'successfully added' in register_repo_create.stdout"
+    sudo: yes
+    sudo_user: "{{ aptly_user }}"
+    with_items: aptly_repositories
+    when: aptly_repositories is defined
+-
+    name: Ensure upload folder exists
+    file: >
+      path={{ aptly_deb_upload_dir }}
+      owner={{ aptly_user }}
+      group={{ aptly_user }}
+      mode="u=rwx,g=rx,o=rx"
+      state=directory
+    sudo: yes
+-
+    name: Upload deb files
+    copy: src={{ item }} dest={{ aptly_deb_upload_dir }}
+    sudo: yes
+    sudo_user: "{{ aptly_user }}"
+    with_fileglob: "{{ playbook_dir }}/{{ aptly_upload_path }}/*.deb"
+
+-
+    name: Add deb files to repository
+    shell: >
+      ls {{ item.fileglob }} | \
+      xargs -I{} aptly repo add {{ item.name }} {{ aptly_deb_upload_dir }}/{}
+    args:
+      chdir: "{{ aptly_deb_upload_dir }}"
+    sudo: yes
+    sudo_user: "{{ aptly_user }}"
+    with_items: aptly_upload_definitions

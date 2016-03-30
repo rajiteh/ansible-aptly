@@ -1,0 +1,31 @@
+---
+-
+    name: Install prerequisites
+    apt: name={{ item }} state=present update_cache=yes
+    with_items:
+        - wget
+        - gnupg
+        - nginx
+    sudo: yes
+-
+    name: Creating user repo
+    user: name={{ aptly_user }} shell=/bin/false
+    sudo: yes
+-
+    name: Install aptly debian repository
+    apt_repository: repo='deb http://repo.aptly.info/ squeeze main' state=present update_cache=yes
+    sudo: yes
+-
+    name: Import aptly key
+    shell: >
+      (apt-key list | grep 9C7DE460)
+      || (wget -qO - https://www.aptly.info/pubkey.txt | apt-key add -)
+    register: register_apt_key
+    changed_when: register_apt_key.stdout == "OK"
+    sudo: yes
+-
+    name: Install Aptly
+    apt: name={{ item }} state=present update_cache=yes
+    with_items:
+        - aptly={{ aptly_version }}
+    sudo: yes

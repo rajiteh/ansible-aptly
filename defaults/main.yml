@@ -1,0 +1,119 @@
+aptly_version: 0.9.5
+aptly_user: aptly
+aptly_virtualhost: repository.local
+aptly_secret_key_path: secrets/aptly
+aptly_secret_key_file: private.key
+aptly_root_dir: /home/{{ aptly_user }}/.aptly
+aptly_deb_upload_dir: /home/{{ aptly_user }}/uploaded
+
+
+#aptly_version: 0.9.*
+#aptly_user: aptly
+#aptly_secret_key_path: files/secret
+#aptly_secret_key_file: private.key
+#aptly_public_key_file: public.key
+#
+#aptly_secret_key_id: EEEEFFFF
+#aptly_distribution: trusty
+#
+#aptly_nginx_enabled: 1
+#aptly_virtualhost: aptly.dev
+#
+#aptly_s3_enabled: 0
+#aptly_s3_endpoint:
+#  region: "us-east-1"
+#  bucket: "aptly"
+#  awsAccessKeyID: "<KEY>"
+#  awsSecretAccessKey: "<SECRET>"
+#  acl: "public-read"
+#
+#aptly_repositories:
+#  -
+#    name: custom-deb
+#    comment: Direct download deb files
+#    distribution: trusty
+#    component: main
+#    architectures: amd64
+#
+#aptly_upload_path: files/deb
+#
+#aptly_upload_definitions:
+#    -
+#      name: custom-deb
+#      fileglob: "*.deb"
+#
+#
+#aptly_mirrors:
+#  -
+#    name: trusty
+#    archive_url: http://us-east-1.ec2.archive.ubuntu.com/ubuntu/
+#    distribution: trusty
+#    component: main
+#    architectures: amd64
+#    key: files/ubuntu-archive.asc
+#  -
+#    name: trusty (universe)
+#    archive_url: http://us-east-1.ec2.archive.ubuntu.com/ubuntu/
+#    distribution: trusty
+#    component: universe
+#    architectures: amd64
+#    key: files/ubuntu-archive.asc
+#  -
+#    name: trusty-updates
+#    archive_url: http://us-east-1.ec2.archive.ubuntu.com/ubuntu/
+#    distribution: trusty-updates
+#    component: main
+#    architectures: amd64
+#    key: files/ubuntu-archive.asc
+#  -
+#    name: trusty-updates (universe)
+#    archive_url: http://us-east-1.ec2.archive.ubuntu.com/ubuntu/
+#    distribution: trusty-updates
+#    component: universe
+#    architectures: amd64
+#    key: files/ubuntu-archive.asc
+#  -
+#    name: trusty-security
+#    archive_url: http://security.ubuntu.com/ubuntu
+#    distribution: trusty-security
+#    component: main
+#    architectures: amd64
+#    key: files/ubuntu-archive.asc
+#  -
+#    name: trusty-security (universe)
+#    archive_url: http://security.ubuntu.com/ubuntu
+#    distribution: trusty-security
+#    component: universe
+#    architectures: amd64
+#    key: files/ubuntu-archive.asc
+#
+#
+#
+#aptly_snapshots_merged:
+#  -
+#    name: merged-all
+#    snapshots:
+#      - trusty
+#      - trusty (universe)
+#      - trusty-updates
+#      - trusty-updates (universe)
+#      - trusty-security
+#      - trusty-security (universe)
+#
+#aptly_snapshot_published:
+#  - test
+#  - stage
+#  - prod
+#
+#aptly_snapshot_promote_definitions:
+#  -
+#    name: test
+#    base: merged-all
+#  -
+#    name: stage
+#    base: test
+#  -
+#    name: prod
+#    base: stage
+#
+#aptly_snapshot_promote: []

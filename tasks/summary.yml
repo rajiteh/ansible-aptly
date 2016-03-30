@@ -1,0 +1,20 @@
+-
+    name: Collect snapshot summary
+    shell: aptly snapshot list -raw | xargs -I{} aptly snapshot show {}
+    sudo: yes
+    sudo_user: "{{ aptly_user }}"
+    register: register_snapshot_summary
+    changed_when: false
+-
+    name: Collect publish summary
+    shell: aptly publish list
+    sudo: yes
+    sudo_user: "{{ aptly_user }}"
+    register: register_publish_summary
+    changed_when: false
+-
+    name: Snapshot summary
+    debug: var=register_snapshot_summary.stdout_lines
+-
+    name: Publish summary
+    debug: var=register_publish_summary.stdout_lines

@@ -1,0 +1,48 @@
+---
+-
+    name: Upload mirror keys
+    copy: src="{{ item }}" dest=/tmp owner={{ aptly_user }} group={{ aptly_user }} mode=0400
+    changed_when: false
+    sudo: yes
+    with_items: "{{ aptly_mirrors | selectattr('key', 'defined') | map(attribute='key') | list }}"
+
+-
+    name: Import mirror keys
+    shell: >
+        (gpg --list-keys | grep `gpg "/tmp/{{ item | basename }}" | head -1 | awk '{print $2}'`)
+        || (gpg --no-default-keyring --keyring trustedkeys.gpg --import "/tmp/{{ item | basename }}")
+    register: register_mirror_keys
+    changed_when: "'imported' in register_mirror_keys.stderr"
+    sudo: yes
+    sudo_user: "{{ aptly_user }}"
+    with_items: "{{ aptly_mirrors | selectattr('key', 'defined') | map(attribute='key') | list }}"
+
+-
+    name: Create mirrors
+    shell: >
+        (aptly mirror list -raw | grep -q "{{ item.name }}" )
+        || (
+            aptly -architectures="{{ item.architectures }}" mirror create \
+                "{{ item.name }}" \
+                "{{ item.archive_url }}" \
+                "{{ item.distribution }}" \
+                "{{ item.component }}"
+
+        )
+    sudo: yes
+    sudo_user: "{{ aptly_user }}"
+    register: register_mirror_create
+    changed_when: "'successfully added' in register_mirror_create.stdout"
+    with_items: aptly_mirrors
+    when: aptly_mirrors is defined
+
+-
+    name: Update mirrors
+    command: aptly mirror update "{{ item.name }}"
+    sudo: yes
+    sudo_user: "{{ aptly_user }}"
+    register: register_mirror_update
+    changed_when: "'Download queue: 0 items (0 B)' not in register_mirror_update.stdout"
+    with_items: aptly_mirrors
+    when: aptly_mirrors is defined
+
