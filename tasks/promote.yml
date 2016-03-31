@@ -71,7 +71,7 @@
 -
     name: Publish promoted snapshots
     shell: >
-     aptly -distribution="{{ aptly_distribution }}" publish snapshot --architectures "amd64,i386" \
+     aptly -distribution="{{ aptly_distribution }}" -skip-contents publish snapshot --architectures "amd64" \
       "{{ item.1.name }}" "{{ aptly_endopoint_config }}{{ item.1.name }}"
     when: item.0 != None
     sudo: yes
