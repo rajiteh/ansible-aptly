@@ -5,6 +5,7 @@
       snapshot_token="BASE_TOKEN-{{ ansible_date_time.epoch }}"
     tags:
       - promote-snapshots
+      - promote2
 
 -
     name: Create publish snapshots
@@ -21,43 +22,40 @@
 
 -
     name: Prepare snapshot bases for promote
-    command: aptly snapshot merge "{{ item.1.base }}-{{ snapshot_token }}" "{{ item.1.base }}"
+    shell: >
+     aptly snapshot merge "${BASE}-{{ snapshot_token }}" "${BASE}"
+    environment:
+      BASE: '{{ (aptly_snapshot_promote_definitions | selectattr("name", "equalto", item) | list)[0].base | mandatory }}'
     sudo: yes
     sudo_user: "{{ aptly_user }}"
     changed_when: false
-    when: item.0 != None
-    with_together:
-      - aptly_snapshot_promote
-      - aptly_snapshot_promote_definitions
+    with_items: aptly_snapshot_promote
     tags:
       - promote-snapshots
+
 -
     name: Unpublish promoting snapshots
     shell: >
-        (aptly publish list | grep -q "{{ item.1.name }}")
-        && aptly publish drop "{{ aptly_distribution }}" "{{ aptly_endopoint_config }}{{ item.1.name }}" || exit 0
+        (aptly publish list | grep -q "${NAME}")
+        && aptly publish drop "{{ aptly_distribution }}" "{{ aptly_endopoint_config }}{{ item }}" || exit 0
     when: item.0 != None
     sudo: yes
     sudo_user: "{{ aptly_user }}"
-    changed_when: false
-    with_together:
-      - aptly_snapshot_promote
-      - aptly_snapshot_promote_definitions
+    with_items: aptly_snapshot_promote
     tags:
       - promote-snapshots
       - unpublish-snapshots
 -
     name: Promote snapshot from bases
     shell: >
-        aptly -force=true snapshot drop "{{ item.1.name }}"  &&
-        aptly snapshot merge "{{ item.1.name }}" "{{ item.1.base }}-{{ snapshot_token }}"
-    when: item.0 != None
+        aptly -force=true snapshot drop "{{ item }}"  &&
+        aptly snapshot merge "{{ item }}" "${BASE}-{{ snapshot_token }}"
+    environment:
+      BASE: '{{ (aptly_snapshot_promote_definitions | selectattr("name", "equalto", item) | list)[0].base | mandatory }}'
     sudo: yes
     sudo_user: "{{ aptly_user }}"
     changed_when: false
-    with_together:
-      - aptly_snapshot_promote
-      - aptly_snapshot_promote_definitions
+    with_items: aptly_snapshot_promote
     tags:
       - promote-snapshots
 -
@@ -72,13 +70,11 @@
     name: Publish promoted snapshots
     shell: >
      aptly -distribution="{{ aptly_distribution }}" -skip-contents publish snapshot --architectures "amd64" \
-      "{{ item.1.name }}" "{{ aptly_endopoint_config }}{{ item.1.name }}"
+      "{{ item }}" "{{ aptly_endopoint_config }}{{ item }}"
     when: item.0 != None
     sudo: yes
     sudo_user: "{{ aptly_user }}"
     changed_when: false
-    with_together:
-      - aptly_snapshot_promote
-      - aptly_snapshot_promote_definitions
+    with_items: aptly_snapshot_promote
     tags:
       - promote-snapshots
